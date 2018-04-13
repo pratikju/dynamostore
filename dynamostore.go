@@ -99,6 +99,19 @@ func (s *DynamoStore) Save(r *http.Request, w http.ResponseWriter, session *sess
 	return nil
 }
 
+// MaxAge sets the maximum age for the store and the underlying cookie implementation.
+// Individual sessions can be deleted by setting Options.MaxAge = -1 for that session.
+func (s *DynamoStore) MaxAge(age int) {
+	s.Options.MaxAge = age
+
+	// Set the maxAge for each securecookie instance.
+	for _, codec := range s.Codecs {
+		if sc, ok := codec.(*securecookie.SecureCookie); ok {
+			sc.MaxAge(age)
+		}
+	}
+}
+
 // save writes encoded session.Values into dynamoDB.
 // returns error if there is an error while saving the session in dynamoDB
 func (s *DynamoStore) save(session *sessions.Session) error {
