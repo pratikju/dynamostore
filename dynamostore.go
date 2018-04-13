@@ -74,9 +74,21 @@ func (s *DynamoStore) Save(r *http.Request, w http.ResponseWriter, session *sess
 	return nil
 }
 
-// load reads the session from dynamodb.
-// returns error if session data does not exist in dynamodb
+// save writes encoded session.Values into dynamoDB.
+// returns error if there is an error while saving the session in dynamoDB
+func (s *DynamoStore) save(session *sessions.Session) error {
+	return nil
+}
+
+// load reads the session from dynamoDB.
+// returns error if session data does not exist in dynamoDB
 func (s *DynamoStore) load(session *sessions.Session) error {
+	return nil
+}
+
+// delete removes the session from dynamodb.
+// returns error if there is an error in deletion of session from dynamoDB
+func (s *DynamoStore) delete(session *sessions.Session) error {
 	return nil
 }
 
@@ -95,9 +107,6 @@ func createTableIfNotExists(client *dynamodb.DynamoDB, table string, readCapacit
 					AttributeType: aws.String("S"),
 				}, {
 					AttributeName: aws.String("Data"),
-					AttributeType: aws.String("S"),
-				}, {
-					AttributeName: aws.String("ModifiedAt"),
 					AttributeType: aws.String("S"),
 				}},
 				KeySchema: []*dynamodb.KeySchemaElement{{
