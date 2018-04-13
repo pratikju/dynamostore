@@ -1,7 +1,9 @@
 package dynamostore
 
 import (
+	"encoding/base32"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -71,6 +73,29 @@ func (s *DynamoStore) New(r *http.Request, name string) (*sessions.Session, erro
 
 // Save adds a single session to the response.
 func (s *DynamoStore) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
+	if session.Options.MaxAge <= 0 {
+		if err := s.delete(session); err != nil {
+			return err
+		}
+		http.SetCookie(w, sessions.NewCookie(session.Name(), "", session.Options))
+		return nil
+	}
+
+	if session.ID == "" {
+		session.ID = strings.TrimRight(base32.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(32)), "=")
+	}
+
+	if err := s.save(session); err != nil {
+		return err
+	}
+
+	encoded, err := securecookie.EncodeMulti(session.Name(), session.ID, s.Codecs...)
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(w, sessions.NewCookie(session.Name(), encoded, session.Options))
+
 	return nil
 }
 
