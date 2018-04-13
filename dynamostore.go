@@ -102,18 +102,76 @@ func (s *DynamoStore) Save(r *http.Request, w http.ResponseWriter, session *sess
 // save writes encoded session.Values into dynamoDB.
 // returns error if there is an error while saving the session in dynamoDB
 func (s *DynamoStore) save(session *sessions.Session) error {
+	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values, s.Codecs...)
+	if err != nil {
+		return err
+	}
+
+	input := &dynamodb.PutItemInput{
+		Item: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				S: aws.String(session.ID),
+			},
+			"Data": {
+				S: aws.String(encoded),
+			},
+			"ModifiedAt": {
+				N: aws.String(time.Now().String()),
+			},
+		},
+		TableName: aws.String(s.table),
+	}
+
+	_, err = s.client.PutItem(input)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // load reads the session from dynamoDB.
 // returns error if session data does not exist in dynamoDB
 func (s *DynamoStore) load(session *sessions.Session) error {
+	input := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				S: aws.String(session.ID),
+			},
+		},
+		TableName: aws.String(s.table),
+	}
+
+	result, err := s.client.GetItem(input)
+	if err != nil {
+		return err
+	}
+
+	if err := securecookie.DecodeMulti(session.Name(), result.Item["Data"].GoString(), &session.Values,
+		s.Codecs...); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // delete removes the session from dynamodb.
 // returns error if there is an error in deletion of session from dynamoDB
 func (s *DynamoStore) delete(session *sessions.Session) error {
+	input := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				S: aws.String(session.ID),
+			},
+		},
+		TableName: aws.String(s.table),
+	}
+
+	_, err := s.client.DeleteItem(input)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
