@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 )
@@ -24,9 +25,9 @@ type DynamoStore struct {
 
 // Session object stored in dynamoDB
 type Session struct {
-	ID         string
-	Data       string
-	ModifiedAt time.Time
+	ID         string `json:"id"`
+	Data       string `json:"data"`
+	ModifiedAt int64  `json:"modified_at"`
 }
 
 func NewDynamoStore(table string, keyPairs ...[]byte) (*DynamoStore, error) {
@@ -120,23 +121,21 @@ func (s *DynamoStore) save(session *sessions.Session) error {
 		return err
 	}
 
-	input := &dynamodb.PutItemInput{
-		Item: map[string]*dynamodb.AttributeValue{
-			"ID": {
-				S: aws.String(session.ID),
-			},
-			"Data": {
-				S: aws.String(encoded),
-			},
-			"ModifiedAt": {
-				N: aws.String(time.Now().String()),
-			},
-		},
-		TableName: aws.String(s.table),
+	sessionObj := &Session{
+		ID:         session.ID,
+		Data:       encoded,
+		ModifiedAt: time.Now().Unix(),
 	}
 
-	_, err = s.client.PutItem(input)
+	sessionItem, err := dynamodbattribute.MarshalMap(sessionObj)
 	if err != nil {
+		return err
+	}
+
+	if _, err = s.client.PutItem(&dynamodb.PutItemInput{
+		Item:      sessionItem,
+		TableName: aws.String(s.table),
+	}); err != nil {
 		return err
 	}
 
@@ -148,7 +147,7 @@ func (s *DynamoStore) save(session *sessions.Session) error {
 func (s *DynamoStore) load(session *sessions.Session) error {
 	input := &dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"ID": {
+			"id": {
 				S: aws.String(session.ID),
 			},
 		},
@@ -160,7 +159,12 @@ func (s *DynamoStore) load(session *sessions.Session) error {
 		return err
 	}
 
-	if err := securecookie.DecodeMulti(session.Name(), result.Item["Data"].GoString(), &session.Values,
+	var sessionObj Session
+	if err := dynamodbattribute.UnmarshalMap(result.Item, &sessionObj); err != nil {
+		return err
+	}
+
+	if err := securecookie.DecodeMulti(session.Name(), sessionObj.Data, &session.Values,
 		s.Codecs...); err != nil {
 		return err
 	}
@@ -173,7 +177,7 @@ func (s *DynamoStore) load(session *sessions.Session) error {
 func (s *DynamoStore) delete(session *sessions.Session) error {
 	input := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"ID": {
+			"id": {
 				S: aws.String(session.ID),
 			},
 		},
@@ -199,14 +203,11 @@ func createTableIfNotExists(client *dynamodb.DynamoDB, table string, readCapacit
 		if awserr.Code() == "ResourceNotFoundException" {
 			_, err = client.CreateTable(&dynamodb.CreateTableInput{
 				AttributeDefinitions: []*dynamodb.AttributeDefinition{{
-					AttributeName: aws.String("ID"),
-					AttributeType: aws.String("S"),
-				}, {
-					AttributeName: aws.String("Data"),
+					AttributeName: aws.String("id"),
 					AttributeType: aws.String("S"),
 				}},
 				KeySchema: []*dynamodb.KeySchemaElement{{
-					AttributeName: aws.String("ID"),
+					AttributeName: aws.String("id"),
 					KeyType:       aws.String("HASH"),
 				}},
 				ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
