@@ -60,6 +60,8 @@ type Session struct {
 // 5. endpoint for aws dynamoDB endpoint.
 //
 // If any of the keys is missing, corresponding default value for the key will be used.
+//
+// See https://github.com/gorilla/sessions/blob/master/store.go for detailed information on what keyPairs does.
 func NewDynamoStore(config map[string]string, keyPairs ...[]byte) (*DynamoStore, error) {
 
 	table := config["table"]
