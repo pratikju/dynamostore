@@ -1,6 +1,6 @@
 # dynamostore
 
-[![GoDoc](https://godoc.org/github.com/pratikju/dynamostore?status.svg)](https://godoc.org/github.com/dynamostore/dynamostore) [![Build Status](https://travis-ci.org/pratikju/dynamostore.svg?branch=master)](https://travis-ci.org/pratikju/dynamostore)
+[![GoDoc](https://godoc.org/github.com/pratikju/dynamostore?status.svg)](https://godoc.org/github.com/pratikju/dynamostore) [![Build Status](https://travis-ci.org/pratikju/dynamostore.svg?branch=master)](https://travis-ci.org/pratikju/dynamostore)
 
 AWS dynamoDB store for gorilla sessions. Uses [aws-go-sdk](github.com/aws/aws-sdk-go/aws)
 
