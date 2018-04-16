@@ -2,7 +2,9 @@ package dynamostore
 
 import (
 	"encoding/base32"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +15,17 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
+)
+
+const (
+	// DefaultDynamoDBTableName is used when no table name is configured explicitly.
+	DefaultDynamoDBTableName = "session-backend"
+	// DefaultDynamoDBReadCapacity is the default read capacity that is used when none is configured explicitly.
+	DefaultDynamoDBReadCapacity = 5
+	// DefaultDynamoDBWriteCapacity is the default write capacity that is used when none is configured explicitly.
+	DefaultDynamoDBWriteCapacity = 5
+	// DefaultDynamoDBRegion is used when no region is configured explicitly.
+	DefaultDynamoDBRegion = "us-east-1"
 )
 
 // DynamoStore stores sessions in dynamoDB.
@@ -30,10 +43,54 @@ type Session struct {
 	ModifiedAt int64  `json:"modified_at"`
 }
 
-func NewDynamoStore(table string, keyPairs ...[]byte) (*DynamoStore, error) {
+func NewDynamoStore(conf map[string]string, keyPairs ...[]byte) (*DynamoStore, error) {
 
-	client := dynamodb.New(session.New())                               //TODO add parameters for session.New()
-	if err := createTableIfNotExists(client, table, 5, 5); err != nil { // TODO give proper value to read and write capacity
+	table := conf["table"]
+	if table == "" {
+		table = DefaultDynamoDBTableName
+	}
+
+	readCapacityString := conf["read_capacity"]
+	if readCapacityString == "" {
+		readCapacityString = "0"
+	}
+	readCapacity, err := strconv.Atoi(readCapacityString)
+	if err != nil {
+		return nil, fmt.Errorf("invalid read capacity: %q", readCapacityString)
+	}
+	if readCapacity == 0 {
+		readCapacity = DefaultDynamoDBReadCapacity
+	}
+
+	writeCapacityString := conf["write_capacity"]
+	if writeCapacityString == "" {
+		writeCapacityString = "0"
+	}
+	writeCapacity, err := strconv.Atoi(writeCapacityString)
+	if err != nil {
+		return nil, fmt.Errorf("invalid write capacity: %q", writeCapacityString)
+	}
+	if writeCapacity == 0 {
+		writeCapacity = DefaultDynamoDBWriteCapacity
+	}
+
+	region := conf["region"]
+	if region == "" {
+		region = DefaultDynamoDBRegion
+	}
+
+	endpoint := conf["endpoint"]
+
+	session, err := session.NewSession(&aws.Config{
+		Region:   aws.String(region),
+		Endpoint: aws.String(endpoint),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	client := dynamodb.New(session)
+	if err := createTableIfNotExists(client, table, readCapacity, writeCapacity); err != nil {
 		return nil, err
 	}
 
