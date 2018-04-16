@@ -38,19 +38,36 @@ type DynamoStore struct {
 
 // Session object stored in dynamoDB
 type Session struct {
-	ID         string `json:"id"`
-	Data       string `json:"data"`
-	ModifiedAt int64  `json:"modified_at"`
+	// Identifier for session values
+	ID string `json:"id"`
+	// Encoded session values
+	Data string `json:"data"`
+	// Unix timestamp indicating when the session values were modified
+	ModifiedAt int64 `json:"modified_at"`
 }
 
-func NewDynamoStore(conf map[string]string, keyPairs ...[]byte) (*DynamoStore, error) {
+// NewDynamoStore creates the dynamoDB store from given configuration
+// config parameters expects the following keys:
+//
+// 1. table for dynamoDB table to store the session.
+//
+// 2. read_capacity for read provisioned throughput for dynamoDB table.
+//
+// 3. write_capacity for write provisioned throughput for dynamoDB table.
+//
+// 4. region for aws region where the dynamoDB table will be created.
+//
+// 5. endpoint for aws dynamoDB endpoint.
+//
+// If any of the keys is missing, corresponding default value for the key will be used.
+func NewDynamoStore(config map[string]string, keyPairs ...[]byte) (*DynamoStore, error) {
 
-	table := conf["table"]
+	table := config["table"]
 	if table == "" {
 		table = DefaultDynamoDBTableName
 	}
 
-	readCapacityString := conf["read_capacity"]
+	readCapacityString := config["read_capacity"]
 	if readCapacityString == "" {
 		readCapacityString = "0"
 	}
@@ -62,7 +79,7 @@ func NewDynamoStore(conf map[string]string, keyPairs ...[]byte) (*DynamoStore, e
 		readCapacity = DefaultDynamoDBReadCapacity
 	}
 
-	writeCapacityString := conf["write_capacity"]
+	writeCapacityString := config["write_capacity"]
 	if writeCapacityString == "" {
 		writeCapacityString = "0"
 	}
@@ -74,12 +91,12 @@ func NewDynamoStore(conf map[string]string, keyPairs ...[]byte) (*DynamoStore, e
 		writeCapacity = DefaultDynamoDBWriteCapacity
 	}
 
-	region := conf["region"]
+	region := config["region"]
 	if region == "" {
 		region = DefaultDynamoDBRegion
 	}
 
-	endpoint := conf["endpoint"]
+	endpoint := config["endpoint"]
 
 	session, err := session.NewSession(&aws.Config{
 		Region:   aws.String(region),
@@ -106,11 +123,20 @@ func NewDynamoStore(conf map[string]string, keyPairs ...[]byte) (*DynamoStore, e
 }
 
 // Get returns a session for the given name after adding it to the registry.
+//
+// It returns a new session if the sessions doesn't exist. Access IsNew on
+// the session to check if it is an existing session or a new one.
+//
+// It returns a new session and an error if the session exists but could
+// not be decoded.
 func (s *DynamoStore) Get(r *http.Request, name string) (*sessions.Session, error) {
 	return sessions.GetRegistry(r).Get(s, name)
 }
 
 // New returns a session for the given name without adding it to the registry.
+//
+// The difference between New() and Get() is that calling New() twice will
+// decode the session data twice, while Get() registers and reuses the same
 func (s *DynamoStore) New(r *http.Request, name string) (*sessions.Session, error) {
 	session := sessions.NewSession(s, name)
 	opts := *s.Options
