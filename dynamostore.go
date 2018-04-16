@@ -179,7 +179,6 @@ func (s *DynamoStore) Save(r *http.Request, w http.ResponseWriter, session *sess
 	}
 
 	http.SetCookie(w, sessions.NewCookie(session.Name(), encoded, session.Options))
-
 	return nil
 }
 
