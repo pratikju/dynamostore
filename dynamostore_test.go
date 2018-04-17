@@ -64,7 +64,7 @@ func TestSessionLifecycle(t *testing.T) {
 	res = httptest.NewRecorder()
 
 	// Testing New session.
-	if session, err = store.New(req, "session-key"); err != nil {
+	if session, err = store.New(req, "mysession"); err != nil {
 		t.Errorf("expected nil; got %v", err)
 		return
 	}
@@ -86,19 +86,25 @@ func TestSessionLifecycle(t *testing.T) {
 	// Testing existing session
 
 	req.AddCookie(res.Result().Cookies()[0])
-	if session, err = store.Get(req, "session-key"); err != nil {
+	existingSession, err := store.Get(req, "mysession")
+	if err != nil {
 		t.Errorf("expected nil; got %v", err)
 		return
 	}
 
-	if session.IsNew {
+	if existingSession.IsNew {
 		t.Error("expected existing session, got new session")
 		return
 	}
 
+	if existingSession.Values["name"] != "alice" {
+		t.Error("session values didn't match")
+		return
+	}
+
 	// Testing Delete session
-	session.Options.MaxAge = -1
-	if err = sessions.Save(req, res); err != nil {
+	existingSession.Options.MaxAge = -1
+	if err = existingSession.Save(req, res); err != nil {
 		t.Errorf("expected nil; got %v", err)
 		return
 	}
