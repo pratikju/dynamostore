@@ -14,7 +14,7 @@ func TestNewDynamoStore(t *testing.T) {
 	// Create Store 1
 	_, err := NewDynamoStore(map[string]string{
 		"table":    fake.CharactersN(10),
-		"endpoint": "http://localhost:8000",
+		"endpoint": "http://localhost",
 	}, []byte("secret-key"))
 	if err != nil {
 		t.Errorf("expected nil; got %v", err)
@@ -24,7 +24,7 @@ func TestNewDynamoStore(t *testing.T) {
 	// Create Store 2
 	_, err = NewDynamoStore(map[string]string{
 		"read_capacity": "abc",
-		"endpoint":      "http://localhost:8000",
+		"endpoint":      "http://localhost",
 	}, []byte("secret-key"))
 	if err == nil {
 		t.Errorf("expected %v; got nil", err)
@@ -34,7 +34,7 @@ func TestNewDynamoStore(t *testing.T) {
 	// Create Store 3
 	_, err = NewDynamoStore(map[string]string{
 		"write_capacity": "abc",
-		"endpoint":       "http://localhost:8000",
+		"endpoint":       "http://localhost",
 	}, []byte("secret-key"))
 	if err == nil {
 		t.Errorf("expected %v; got nil", err)
@@ -53,7 +53,7 @@ func TestSessionLifecycle(t *testing.T) {
 	// Create Store 1
 	store, err := NewDynamoStore(map[string]string{
 		"region":   "ap-south-1",
-		"endpoint": "http://localhost:8000/",
+		"endpoint": "http://localhost",
 	}, []byte("sessionSecret"))
 	if err != nil {
 		t.Errorf("expected nil; got %v", err)
