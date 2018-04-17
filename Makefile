@@ -1,2 +1,3 @@
 dynamostore:
+	go get -t -v ./...
 	go build
