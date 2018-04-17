@@ -1,0 +1,2 @@
+dynamostore:
+	go build
