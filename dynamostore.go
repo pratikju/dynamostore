@@ -151,6 +151,8 @@ func (s *DynamoStore) New(r *http.Request, name string) (*sessions.Session, erro
 			err = s.load(session)
 			if err == nil {
 				session.IsNew = false
+			} else {
+				err = nil
 			}
 		}
 	}
