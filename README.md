@@ -13,7 +13,7 @@ go get -u github.com/pratikju/dynamostore
 
 # Example
 
-```
+```go
 import (
 	"github.com/pratikju/dynamostore"
 )
