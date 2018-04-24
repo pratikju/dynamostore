@@ -12,35 +12,17 @@ import (
 func TestNewDynamoStore(t *testing.T) {
 
 	// Create Store 1
-	_, err := NewDynamoStore(map[string]string{
-		"table":    fake.CharactersN(10),
-		"endpoint": "http://localhost:8000",
+	_, err := NewDynamoStore(map[string]interface{}{
+		"table":         fake.CharactersN(10),
+		"region":        "",
+		"read_capacity": -1,
+		"endpoint":      "http://localhost:8000",
+		"ttl_enabled":   false,
 	}, []byte("secret-key"))
 	if err != nil {
 		t.Errorf("expected nil; got %v", err)
 		return
 	}
-
-	// Create Store 2
-	_, err = NewDynamoStore(map[string]string{
-		"read_capacity": "abc",
-		"endpoint":      "http://localhost:8000",
-	}, []byte("secret-key"))
-	if err == nil {
-		t.Errorf("expected %v; got nil", err)
-		return
-	}
-
-	// Create Store 3
-	_, err = NewDynamoStore(map[string]string{
-		"write_capacity": "abc",
-		"endpoint":       "http://localhost:8000",
-	}, []byte("secret-key"))
-	if err == nil {
-		t.Errorf("expected %v; got nil", err)
-		return
-	}
-
 }
 
 func TestSessionLifecycle(t *testing.T) {
@@ -51,14 +33,17 @@ func TestSessionLifecycle(t *testing.T) {
 	var err error
 
 	// Create Store 1
-	store, err := NewDynamoStore(map[string]string{
-		"region":   "ap-south-1",
-		"endpoint": "http://localhost:8000",
+	store, err := NewDynamoStore(map[string]interface{}{
+		"region":      "ap-south-1",
+		"endpoint":    "http://localhost:8000",
+		"ttl_enabled": true,
 	}, []byte("sessionSecret"))
 	if err != nil {
 		t.Errorf("expected nil; got %v", err)
 		return
 	}
+
+	store.MaxAge(86400 * 30 * 30)
 
 	req, _ = http.NewRequest("GET", "http://localhost:8000/", nil)
 	res = httptest.NewRecorder()
