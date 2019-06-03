@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/pratikju/dynamostore?status.svg)](https://godoc.org/github.com/pratikju/dynamostore) [![Build Status](https://travis-ci.org/pratikju/dynamostore.svg?branch=master)](https://travis-ci.org/pratikju/dynamostore)
 
-AWS dynamoDB store for gorilla sessions. Uses [AWS Official Go Library](github.com/aws/aws-sdk-go/aws)
+AWS dynamoDB store for gorilla sessions. Uses [AWS Official Go Library](https://github.com/aws/aws-sdk-go)
 
 
 # Installation
